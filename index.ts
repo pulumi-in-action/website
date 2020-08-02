@@ -2,87 +2,46 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 
+import { routes as ch03routes } from "./ch/03";
+
+const config = new pulumi.Config();
+const domain = config.require("domain");
+const certArn = config.require("certArn");
+
+// Set up the base API Gateway, which serves static website content and a REST API.
 const site = new awsx.apigateway.API("site", {
     routes: [
         {
             path: "/",
             localPath: "www"
         },
-        {
-            path: "/ch/03/api/dev",
-            method: "GET",
-            eventHandler: async () => {
-                const responses = [
-                    {
-                        statusCode: 200,
-                        body: "It's all good."
-                    },
-                    {
-                        statusCode: 500,
-                        body: "Oh noes! 😱 Something went wrong."
-                    }
-                ];
-
-                // Fail ~20% of the time.
-                const response = responses[Math.random() <= 0.8 ? 0 : 1];
-
-                return {
-                    statusCode: response.statusCode,
-                    body: JSON.stringify(response)
-                }
-            }
-        },
-        {
-            path: "/ch/03/api/prod",
-            method: "GET",
-            eventHandler: async () => {
-                const responses = [
-                    {
-                        statusCode: 200,
-                        body: "It's all good."
-                    },
-                    {
-                        statusCode: 500,
-                        body: "Oh noes! 😱 Something went wrong."
-                    }
-                ];
-
-                // Fail ~20% of the time.
-                const response = responses[Math.random() <= 0.8 ? 0 : 1];
-
-                return {
-                    statusCode: response.statusCode,
-                    body: JSON.stringify(response)
-                }
-            }
-        }
+        ...ch03routes,
     ]
 });
 
-// How this all works.
-// https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-edge-optimized-custom-domain-name.html#how-to-custom-domains-mapping-console
-
-const domain = "pulumi-in-action.info";
-const certArn = "arn:aws:acm:us-east-1:845551429707:certificate/5c27f537-84a6-41ca-ab9b-d9d1dc3d8978";
-
-// Look up the zone we want to use as a base.
+// The hosted zone for the root domain.
 const zone = pulumi.output(aws.route53.getZone({
     name: domain,
 }));
 
-// Define an API Gateway Domain. Give it a name. Optionally, provide a basepath; otherwise, / is assumed.
+// Register our custom domain name as an API Gateway domain.
 const gatewayDomain = new aws.apigateway.DomainName("gateway-domain", {
     certificateArn: certArn,
     domainName: domain,
 });
 
+// Map the custom domain to the API Gateway's stage name (e.g., "/stage"). More on how
+// this works at:
+// https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-edge-optimized-custom-domain-name.html#how-to-custom-domains-mapping-console
 const mapping = new aws.apigateway.BasePathMapping("mapping", {
     restApi: site.restAPI,
     stageName: site.stage.stageName,
     domainName: gatewayDomain.id,
 });
 
-const apiAlias = new aws.route53.Record("alias", {
+// Create an A record to point to the API Gateway domain's implicitly created CloudFront
+// distribution.
+const alias = new aws.route53.Record("alias", {
     name: gatewayDomain.domainName,
     type: "A",
     zoneId: zone.id,
@@ -95,4 +54,5 @@ const apiAlias = new aws.route53.Record("alias", {
     ],
 });
 
-export const apiUrl = pulumi.interpolate`https://${gatewayDomain.domainName}/`;
+// Export the URL of the website.
+export const siteUrl = pulumi.interpolate`https://${gatewayDomain.domainName}/`;
