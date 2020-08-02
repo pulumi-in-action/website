@@ -62,11 +62,7 @@ const site = new awsx.apigateway.API("site", {
 // How this all works.
 // https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-edge-optimized-custom-domain-name.html#how-to-custom-domains-mapping-console
 
-// Making this work takes many minutes -- like 30ish. Because CloudFront.
-
 const domain = "pulumi-in-action.info";
-const subdomain = "www";
-const www = [subdomain, domain].join(".");
 const certArn = "arn:aws:acm:us-east-1:845551429707:certificate/5c27f537-84a6-41ca-ab9b-d9d1dc3d8978";
 
 // Look up the zone we want to use as a base.
@@ -77,7 +73,7 @@ const zone = pulumi.output(aws.route53.getZone({
 // Define an API Gateway Domain. Give it a name. Optionally, provide a basepath; otherwise, / is assumed.
 const gatewayDomain = new aws.apigateway.DomainName("gateway-domain", {
     certificateArn: certArn,
-    domainName: www,
+    domainName: domain,
 });
 
 const mapping = new aws.apigateway.BasePathMapping("mapping", {
@@ -86,7 +82,7 @@ const mapping = new aws.apigateway.BasePathMapping("mapping", {
     domainName: gatewayDomain.id,
 });
 
-const alias = new aws.route53.Record("alias", {
+const apiAlias = new aws.route53.Record("alias", {
     name: gatewayDomain.domainName,
     type: "A",
     zoneId: zone.id,
@@ -99,26 +95,4 @@ const alias = new aws.route53.Record("alias", {
     ],
 });
 
-const bucket = new aws.s3.Bucket("apex-redirect-bucket", {
-    bucket: "www.pulumi-in-action.info",
-    acl: aws.s3.PublicReadAcl,
-    website: {
-        redirectAllRequestsTo: www,
-    }
-});
-
-const apexAlias = new aws.route53.Record("apex-alias", {
-    name: domain,
-    type: "A",
-    zoneId: zone.id,
-    aliases: [
-        {
-            name: bucket.bucket,
-            zoneId: zone.id,
-            evaluateTargetHealth: false,
-        }
-    ],
-});
-
-export const stageUrl = site.url
 export const apiUrl = pulumi.interpolate`https://${gatewayDomain.domainName}/`;
