@@ -1,0 +1,4 @@
+config:
+  aws:region: us-west-2
+  website:certificateArn: arn:aws:acm:us-east-1:845551429707:certificate/5c27f537-84a6-41ca-ab9b-d9d1dc3d8978
+  website:domain: pulumi-in-action.info
