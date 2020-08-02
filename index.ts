@@ -30,8 +30,7 @@ const gatewayDomain = new aws.apigateway.DomainName("gateway-domain", {
     domainName: domain,
 });
 
-// Map the custom domain to the API Gateway's stage name (e.g., "/stage"). More on how
-// this works at:
+// Map the custom domain to the API Gateway's stage name (e.g., "/stage"). More on how this works at:
 // https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-edge-optimized-custom-domain-name.html#how-to-custom-domains-mapping-console
 const mapping = new aws.apigateway.BasePathMapping("mapping", {
     restApi: gateway.restAPI,
@@ -39,8 +38,7 @@ const mapping = new aws.apigateway.BasePathMapping("mapping", {
     domainName: gatewayDomain.id,
 });
 
-// Create an A record to point to the API Gateway domain's implicitly created CloudFront
-// distribution.
+// Create an A record to point to the API Gateway domain's implicitly created CloudFront distribution.
 const alias = new aws.route53.Record("alias", {
     name: gatewayDomain.domainName,
     type: "A",
