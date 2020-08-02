@@ -13,7 +13,11 @@ const gateway = new awsx.apigateway.API("gateway", {
     routes: [
         {
             path: "/",
-            localPath: "www"
+            localPath: "www",
+        },
+        {
+            path: "/about",
+            localPath: "www/about",
         },
         ...ch03routes,
     ]
