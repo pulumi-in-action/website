@@ -9,7 +9,7 @@ const domain = config.require("domain");
 const certArn = config.require("certArn");
 
 // Set up the base API Gateway, which serves static website content and a REST API.
-const site = new awsx.apigateway.API("site", {
+const gateway = new awsx.apigateway.API("gateway", {
     routes: [
         {
             path: "/",
@@ -34,8 +34,8 @@ const gatewayDomain = new aws.apigateway.DomainName("gateway-domain", {
 // this works at:
 // https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-edge-optimized-custom-domain-name.html#how-to-custom-domains-mapping-console
 const mapping = new aws.apigateway.BasePathMapping("mapping", {
-    restApi: site.restAPI,
-    stageName: site.stage.stageName,
+    restApi: gateway.restAPI,
+    stageName: gateway.stage.stageName,
     domainName: gatewayDomain.id,
 });
 

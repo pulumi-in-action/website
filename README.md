@@ -1,1 +1,3 @@
-# pulumi-in-action.info
+# website
+
+The companion website for Pulumi in Action.
